@@ -21,13 +21,11 @@ You don't want to add another heavy code just for simple use case
 
 No, this is just a toolbelt, not a framework or library. If you want the whole things use other extension that add all things!
 
-This is just a simple library to remove user's every project repeated code in an simple and elegant way.
+This is just a simple library to remove user's every project repeated code in a simple and elegant way.
 
 ## Toolbelt.View
 
-### Things Added
-
-#### 1-way model-view Bindings
+### 1-way model-view Bindings
 
 Usage: 
 
@@ -60,9 +58,7 @@ Usage:
 
 ## Toolbelt.Model
 
-### Things Added
-
-#### Extra functions
+### Extra functions
 
 `toggle` : toggles a value (falsy to true and true to false)
 
@@ -78,7 +74,7 @@ Usage:
   model.get('status') // => false
 ````
 
-#### Local attributes
+### Local attributes
 
 Usage:
 ````javascript
@@ -100,7 +96,7 @@ Usage:
   model.setLocal('status', 'ready'); // => another way to set local attribute
 ````
 
-##### Computed properties
+### Computed properties
 
 Usage:
 
@@ -122,9 +118,7 @@ Usage:
 
 ## Toolbelt.Collection
 
-### functions
-
-#### property (no ready yet)
+### property (no ready yet)
 
 <sup>There are many times that I wanted to loop through collection models,
 change each one, but binding (or in pure backbone re-rendering any model again)
