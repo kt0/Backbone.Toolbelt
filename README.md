@@ -18,7 +18,7 @@ Another simple library to add things you don't like to use extension for.
 * Nested router
 * Router logic
 
-## So why don't use those things?
+## So why don't use those other extensions?
 
 You don't want to add another heavy code just for simple use case
 
