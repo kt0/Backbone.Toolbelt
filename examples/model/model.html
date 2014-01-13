@@ -1,0 +1,82 @@
+<html>
+  <head>
+    <title>Backbone.Toolbelt * Bind model to DOM</title>
+    <script src="../vendor/jquery.js" type="text/javascript"></script>
+    <script src="../vendor/underscore.js" type="text/javascript"></script>
+    <script src="../vendor/backbone.js" type="text/javascript"></script>
+    <script src="../../build/backbone.toolbelt.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="main">
+      <div>Full name is firstname + " " + lastname</div>
+      <div><input type="text" class="firstname"><input type="text" class="lastname"></div>
+      <div class="name"></div><br>
+      <div>If this two is checked then status will be ready!</div>
+      <label for="option1">Change Option 1</label><input type="checkbox" name="option1" id="option1">
+      <label for="option2">Change Option 2</label><input type="checkbox" name="option2" id="option2">
+      <div class="status"></div>
+    </div>
+
+    <script>
+      // Boilerplate code from bind example
+      var View = Backbone.View.extend({
+        DOMAttributes: {
+          status: {
+            to: 'html',
+            el: '.status'
+          }, name: {
+            to: 'html',
+            el: '.name'
+          }
+        },
+        changeOption1: function(e) {
+          this.model.set('option1', $(e.target).is(':checked'));
+        },
+        changeOption2: function(e) {
+          this.model.set('option2', $(e.target).is(':checked'));
+        },
+        changefirstname: function (e) {
+          this.model.set('firstname', $(e.target).val());
+        },
+        changelastname: function (e) {
+          this.model.set('lastname', $(e.target).val());
+        },
+        events: {
+          'change #option1' : 'changeOption1',
+          'change #option2' : 'changeOption2',
+          'keyup .firstname' : 'changefirstname',
+          'keyup .lastname' : 'changelastname'
+        }
+      });
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.View, View);
+
+      // Create new Model class
+      var Model = Backbone.Model.extend({
+        defaultLocals: {
+          status: false
+        }, 
+        initialize: function() {
+          this.resetLocals();
+        }
+      });
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.Model, Model);
+
+      var model = new Model({option1: true,option2: false});
+
+      // Create new View instance
+      var view = new View({el: $('#main').get(0), model: model});
+
+      // Bind model attributes
+      view.bindDOM(model.locals);
+
+      model.property('status', function(option1, option2) {
+        return option1 && option2;
+      }, ['option1', 'option2']);
+
+      model.property('name', function(firstname, lastname) {
+        return firstname + ' ' + lastname;
+      }, ['firstname', 'lastname']);
+
+    </script>
+  </body>
+</html>

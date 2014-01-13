@@ -153,4 +153,102 @@
       });
     }
   };
+
+  // Borrowing changin Backbone.Model's constructor
+  Toolbelt.Locals = function(attributes, options) {
+    var attrs = attributes || {};
+    options || (options = {});
+    this.cid = _.uniqueId('locals'); // Hope backbone or other library don't use that!
+    this.attributes = {};
+    this.set(attrs, options);
+    this.changed = {};
+  };
+
+  // Choose things from Backbone's model that we need
+  // Keep in mind this act like model there (this is a model without ajax things!)
+  // And like arguments in javascript, we like it model-like!
+  var mPro = Backbone.Model.prototype,
+      lPro = Toolbelt.Locals.prototype,
+      localMethods = [ mPro, 'toJSON', 'get', 'set', 'has', 'unset', 'clear', 'clone',
+                       'hasChanged', 'changedAttributes', 'previous', 'previousAttributes',
+                       'trigger', 'listenToOnce', 'on', 'once', 'off', 'listenTo', 'stopListening'
+                     ];
+
+  _.extend(lPro, _.pick.apply(null, localMethods));
+
+  // Haven't decided to add locals validation or not! btw for other Backbone.Model's methods
+  // this always return true
+  lPro._validate = function() { return true; };
+
+  Toolbelt.Model = {
+    toggle: function(key) {
+      this.set(key, !this.get(key));
+    },
+    resetLocals: function(attributes) {
+      var attrs = _.extend(_.result(this, 'defaultLocals') || {}, attributes);
+      if (this.locals) {
+        this.stopListening(this.locals);
+        this.locals.stopListening();
+        this.locals.off();
+        delete this.locals;
+      }
+      this.locals = new Toolbelt.Locals(attrs);
+      this.locals.model = this;
+    },
+    setLocal: function() {
+      return this.locals.set.apply(this.locals, arguments);
+    },
+    // This is for computed property not attributes!
+    property: function(key, fn, attributes) {
+      // create a copy of attributes (that might change!)
+      if (!key || !fn) { return; }
+      // No need for binding! it's static, event an empty array will result in binding!
+      // Most time user want to listen on 'change' not 'change:key'!
+      if (attributes == null) {
+        this.locals.set(key, fn.call(this));
+      } else {
+        var that = this, locals = this.locals;
+        attributes = [].concat(_.isArray(attributes) ? attributes : [attributes]);
+        this.locals.listenTo(this, 'change', function() {
+          // If anything we want is in changed attributes?
+          if (_.without.apply(null, [this.previousAttributes()].concat(attributes)).length) {
+            locals.set(key, fn.apply(that, _.values(_.pick(that.attributes, attributes))));
+          }
+        });
+        locals.set(key, fn.apply(that, _.values(_.pick(that.attributes, attributes))));
+      }
+    }
+  }
+
+  Toolbelt.Collection = {
+    property: function(key, fn, attributes) {
+      // create a copy of attributes (that might change!)
+      if (!key || !fn) { return; }
+      // No need for binding! it's static, event an empty array will result in binding!
+      // Most time user want to listen on 'change' not 'change:key'!
+      if (attributes == null) {
+        this.locals.set(key, fn.call(this));
+      } else {
+        var that = this, locals = this.locals, fnChange;
+        attributes = [].concat(_.isArray(attributes) ? attributes : [attributes]);
+        // I know, This is not good (and absolutely very bad)
+        // This is just a placeholder!
+        var fnPluck = function(attribute) {
+          return that.pluck(attribute);
+        }
+        fnChange = function() {
+          locals.set(key, fn.apply(that, _.map(attributes, fnPluck)));
+        };
+        for (var i = 0, l = attributes.length; i < l; i++) {
+          var attribute = attributes[i];
+          this.locals.listenTo(this, 'change:'+attribute, fnChange);
+        }
+        this.locals.listenTo(this, 'add', fnChange);
+        this.locals.listenTo(this, 'remove', fnChange);
+        this.locals.listenTo(this, 'reset', fnChange);
+        fnChange();
+      }
+    }
+  };
+  Toolbelt.Collection.resetLocals = Toolbelt.Model.resetLocals;
 });

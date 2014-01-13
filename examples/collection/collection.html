@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <title>Backbone.Toolbelt * Bind model to DOM</title>
+    <script src="../vendor/jquery.js" type="text/javascript"></script>
+    <script src="../vendor/underscore.js" type="text/javascript"></script>
+    <script src="../vendor/backbone.js" type="text/javascript"></script>
+    <script src="../../build/backbone.toolbelt.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="main">
+      Total Tasks : <div class='total'></div><br>
+      Remaining Tasks : <div class='remaining'></div>
+      <button class="add">Add</button><button class="pop">Pop</button>
+    </div>
+
+    <script>
+      // Boilerplate code from bind example
+      var View = Backbone.View.extend({
+        DOMAttributes: {
+          total: {
+            to: 'html',
+            el: '.total'
+          }, remaining: {
+            to: 'html',
+            el: '.remaining'
+          }
+        },
+        addModel: function(e) {
+          this.model.add({status: !(Math.round(Math.random()*3)%3)}); // Fairly random!
+        },
+        popModel: function(e) {
+          this.model.pop();
+        },
+        events: {
+          'click .add' : 'addModel',
+          'click .pop' : 'popModel'
+        }
+      });
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.View, View);
+
+      var Collection = Backbone.Collection.extend({
+        initialize: function() {
+          this.resetLocals();
+          this.property('remaining', function(statuses) {
+            var remaining = 0;
+            _.each(statuses, function(status) {
+              if (!status) { remaining++; }
+            })
+            return remaining;
+          }, ['status']);
+          this.property('total', function(statuses) {
+            return statuses.length;
+          }, ['status'])
+        }
+      });
+
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.Collection, Collection);
+
+      var collection = new Collection();
+      var view = new View({model: collection, el: $('#main').get(0)});
+      view.bindDOM(collection.locals);
+
+      var toAdd = [];
+      for (var i = 0; i < 10; i++) {
+        toAdd.push({title: 'Task #'+i, status: !(Math.round(Math.random()*3)%3)});
+      }
+      collection.reset(toAdd);
+
+    </script>
+  </body>
+</html>
