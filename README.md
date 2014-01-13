@@ -1,7 +1,11 @@
 Backbone.Toolbelt
 =================
 
+***Under development, not advised to use in production!***
+
 This is a Backbone Toolbelt, notihg will be added to original Backbone Objects (except for Tooblelt that added to Backbone)
+
+<sup>This is Backbone based little sister for my framework [Lilith](https://github.com/KeyKaKiTO/Lilith). and this line isn't advertisement! Clarification!</sup>
 
 ## What is this?
 
@@ -10,6 +14,7 @@ Another simple library to add things you don't like to use extension for.
 ## Like what?
 
 * 1/2-way model-view binding
+* Model/Collection computed property
 * Nested router
 * Router logic
 
