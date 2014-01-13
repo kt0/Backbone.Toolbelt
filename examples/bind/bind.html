@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <title>Backbone.Toolbelt * Bind model to DOM</title>
+    <script src="../vendor/jquery.js" type="text/javascript"></script>
+    <script src="../vendor/underscore.js" type="text/javascript"></script>
+    <script src="../vendor/backbone.js" type="text/javascript"></script>
+    <script src="../../build/backbone.toolbelt.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="main">
+      <div class="name"></div><br>
+      Status : <input type='checkbox' class='checked'><label class='checkit'></label>
+    </div>
+
+    <script>
+      // Create new View class (could be any view type without things provided with Toolbelt, like Marionette.ItemView)
+      var View = Backbone.View.extend({
+        DOMAttributes: {
+          name: [{
+            to: 'html',
+            el: '.name'
+          }],
+          status: [{
+            to: 'checked',
+            el: '.checked',
+            falsy: 'false',
+            truthy: 'true'
+          }, {
+            to: 'html',
+            el: '.checkit',
+            falsy: 'false',
+            truthy: 'true'
+          }]
+        }
+      });
+
+      // Extend View with extra methods.
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.View, View);
+
+      // Create new Backbone.Model instance
+      var model = new Backbone.Model({name: 'kito', status: false});
+
+      // Create new View instance
+      var view = new View({el: $('#main').get(0)});
+
+      // Bind model attributes
+      view.bindDOM(model);
+
+      var i = 0, j=0;
+      var names = ['kito', 'KiTO'];
+      // change model's name every 2 second
+      setInterval(function() {
+        model.set('name', names[++i%2]);
+      }, 1000);
+      setInterval(function() {
+        model.set('status', !(++j%2)); // fairly random true or false
+      }, 1400);
+      // After 10 seconds remove binds
+      setTimeout(function () {
+        view.unBindDOM(model);
+      }, 1000);
+    </script>
+  </body>
+</html>
