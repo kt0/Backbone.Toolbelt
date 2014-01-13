@@ -136,6 +136,7 @@ Usage :
 ````javascript
   var Collection = Backbone.Collection.extend({
     initialize: functions() {
+      this.resetLocals();
       this.property('remaining', function(statuses) {
         var remaining = 0;
         _.each(statuses, function(status) {
@@ -149,7 +150,28 @@ Usage :
   Backbone.Toolbelt.extend(Backbone.Toolbelt.Collection, Collection);
 
   var collection = new Collection();
-  for (var i = 0; i < 10; i++) {
-    collection.add({title: 'Task #'+i, status: !(i%3)});
-  }
+  // Adding, removing, reseting or changing in collection will result a change
+  // in collections computed properties
 ````
+
+Keep in mind that third parameter is attributes that
+you wanted to make property of, therefore if no property set
+means that this is an immediate propery, and will not change on
+add/remove/reset, to make that happen pass empty array as attributes.
+
+
+## Contributers
+
+This library created and maintained by @keykakito ([@keykakito](https://twitter.com/keykakito))
+
+Feel free contribute! :)
+
+This library needs code, wiki pages, docs, gh-pages, build scripts, tests.
+
+## Licence
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Kazem Keshavarz
+
+This library released under MIT licence, Check [licence](https://github.com/KeyKaKiTO/Backbone.Toolbelt/blob/master/LICENSE)

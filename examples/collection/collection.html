@@ -47,10 +47,10 @@
               if (!status) { remaining++; }
             })
             return remaining;
-          }, ['status']);
-          this.property('total', function(statuses) {
-            return statuses.length;
-          }, ['status'])
+          }, 'status');
+          this.property('total', function() {
+            return this.length;
+          }, []);
         }
       });
 
