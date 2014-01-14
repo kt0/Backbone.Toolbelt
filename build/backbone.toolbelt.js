@@ -15,6 +15,9 @@
   }
   var Toolbelt = Backbone.Toolbelt = {};
 
+  // Create and empty function to use as placeholder for required functions
+  var Empty = function() {};
+
   var arrPro = Array.prototype;
   
   var slice = function(array, start, end) {
@@ -43,7 +46,7 @@
   var bindClass = function ($el, DOMAttr, value, oldValue) { $el.removeClass(oldValue).addClass(value); },
       bindText = function ($el, DOMAttr, value, oldValue) { $el.text(value); },
       bindHtml = function ($el, DOMAttr, value, oldValue) { $el.html(value); },
-      bindAttr = function ($el, DOMAttr, value, oldValue) { $el.prop(DOMAttr, value) },
+      bindAttr = function ($el, DOMAttr, value, oldValue) { $el.prop(DOMAttr, value); },
       // Listen method is used for listening to models change (by attr)
       listen = function (view, model, attr, callback) { view.listenTo(model, 'change:' + attr, callback); },
       generator = function (config, action, that) {
@@ -67,7 +70,7 @@
         "'true'": 'true',
         '"false"': 'false',
         '"true"': 'true'
-      }
+      },
       // Normalize dom configuration, change 'false' and 'true' to false and true
       // and '"false"' and '"true"' to "false" and "true"
       normalizeDOMConfig = function(attribute) {
@@ -157,7 +160,7 @@
   // Borrowing changin Backbone.Model's constructor
   Toolbelt.Locals = function(attributes, options) {
     var attrs = attributes || {};
-    options || (options = {});
+    if (!options) options = {};
     this.cid = _.uniqueId('locals'); // Hope backbone or other library don't use that!
     this.attributes = {};
     this.set(attrs, options);
@@ -204,7 +207,7 @@
       if (!key || !fn) { return; }
       // No need for binding! it's static, event an empty array will result in binding!
       // Most time user want to listen on 'change' not 'change:key'!
-      if (attributes == null) {
+      if (attributes == void 0) {
         this.locals.set(key, fn.call(this));
       } else {
         var that = this, locals = this.locals;
@@ -218,7 +221,7 @@
         locals.set(key, fn.apply(that, _.values(_.pick(that.attributes, attributes))));
       }
     }
-  }
+  };
 
   Toolbelt.Collection = {
     property: function(key, fn, attributes) {
@@ -226,7 +229,7 @@
       if (!key || !fn) { return; }
       // No need for binding! it's static, event an empty array will result in binding!
       // Most time user want to listen on 'change' not 'change:key'!
-      if (attributes == null) {
+      if (attributes == void 0) {
         this.locals.set(key, fn.call(this));
       } else {
         var that = this, locals = this.locals, fnChange;
@@ -235,7 +238,7 @@
         // This is just a placeholder!
         var fnPluck = function(attribute) {
           return that.pluck(attribute);
-        }
+        };
         fnChange = function() {
           locals.set(key, fn.apply(that, _.map(attributes, fnPluck)));
         };
@@ -251,4 +254,214 @@
     }
   };
   Toolbelt.Collection.resetLocals = Toolbelt.Model.resetLocals;
+
+  // Borrowing some code from Backbone.Router (this is not Router like!)
+  // Similarity is high but differences are more!
+  Toolbelt.MiniRouter = function(options) {
+    if (!options) options = {};
+    _.extend(this, _.pick(options, 'subroutes', 'start', 'stop', 'initialize', 'router', 'name', 'rootName'));
+    this._routes = {};
+    this.initialize.apply(this, arguments);
+  };
+
+  // Cached regular expressions for matching named param parts and splatted
+  // parts of route strings.
+  var optionalParam = /\((.*?)\)/g;
+  var namedParam    = /(\(\?)?:\w+/g;
+  var splatParam    = /\*\w+/g;
+  var escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g;
+
+  var _routeToRegExp = function(parent, route) {
+    parent = parent.replace(escapeRegExp, '\\$&')
+                 .replace(optionalParam, '(?:$1)?')
+                 .replace(namedParam, function(match, optional) {
+                   return optional ? match : '([^\/]+)';
+                 })
+                 .replace(splatParam, '(.*?)');
+    return new RegExp('^' + parent + '$');
+  };
+
+  var _extractParameters = function(route, fragment) {
+    var params = slice(route.exec(fragment), 1);
+    return _.map(params, function(param) {
+      return param ? decodeURIComponent(param) : null;
+    });
+  };
+
+  // Create minirouter callback (that compatible in backbone routing way)
+  var routeGenerator = function(minirouter, routeRgx) {
+    return function() {
+      // We need a copy of arguments
+      var args = slice(arguments),
+          router = minirouter.router,
+          _routeStack = router._routeStack,
+          _minirouter,
+          stackPosition = -1,
+          oldRouteStack = [],
+          thisRouteStack = [minirouter],
+          i, l;
+      _minirouter = minirouter;
+      // console.log(_.pluck(_routeStack, 'name'));
+      while ((_minirouter = _minirouter.parent) != void 0) {
+        thisRouteStack.unshift(_minirouter);
+      }
+      while ((_minirouter = _routeStack.pop()) != void 0) {
+        if ((stackPosition = _.indexOf(thisRouteStack, _minirouter)) !== -1) {
+          _routeStack.push(_minirouter);
+          break;
+        } else {
+          oldRouteStack.push(_minirouter);
+        }
+      }
+      // console.log(_.pluck(oldRouteStack, 'name'));
+      newRouteStack = thisRouteStack.slice(stackPosition + 1);
+      // console.log(stackPosition);
+      // console.log(_.pluck(newRouteStack, 'name'));
+      // console.log('args');
+      // console.log(args);
+      var fragment = Backbone.history.previousPath, c = 0, fragments, argsStopStack = [];
+      // console.log(fragment);
+      if (fragment) {
+        var oldArgs = Backbone.history.oldArgs;
+        for (i = 0, l = _routeStack.length; i < l; i++) {
+          fragments = _extractParameters(_routeStack[i].root, fragment);
+          c += fragments.length - 1;
+          fragment = fragments[0];
+        }
+        for (i = oldRouteStack.length; i--; ) {
+          // console.log(fragment);
+          fragments = _extractParameters(oldRouteStack[i].root, fragment);
+          // console.log(fragments);
+          c += fragments.length - 1;
+          argsStopStack.unshift(oldArgs.slice(c));
+          fragment = fragments[0];
+        }
+        // console.log(argsStopStack);
+        for (i = 0, l = oldRouteStack.length; i < l; i++) {
+          oldRouteStack[i]._callStop.apply(oldRouteStack[i], argsStopStack[i]);
+        }
+      }
+      fragment = Backbone.history.fragment;
+      c = 0;
+      for (i = 0, l = _routeStack.length; i < l; i++) {
+        fragments = _extractParameters(_routeStack[i].root, fragment);
+        c += fragments.length - 1;
+        fragment = fragments[0];
+      }
+      // console.log('new args');
+      // console.log(args.slice(c));
+      _minirouter = minirouter;
+      for (i = 0, l = newRouteStack.length; i < l; i++) {
+        fragments = _extractParameters(newRouteStack[i].root, fragment);
+        // console.log(fragments);
+        c += fragments.length - 1;
+        fragment = fragments[0];
+        newRouteStack[i]._callStart(args.slice(c));
+      }
+      router._routeStack = _routeStack.concat(newRouteStack);
+    };
+  };
+
+  _.extend(Toolbelt.MiniRouter.prototype, {
+    initialize: Empty,
+    start: Empty,
+    stop: Empty,
+    _findRoute: function(fragment) {
+      var minirouter;
+      for (var i = 0, l = this._minirouts.length; i < l; i++) {
+        minirouter = this._minirouts[i];
+        if (minirouter.routeRgx.test(fragment)) return minirouter;
+      }
+    },
+    _callStop: function() {
+      this.stop.apply(this, arguments);
+    },
+    _callStart: function() {
+      this.start.apply(this, arguments);
+    },
+    _route: function(route, minirouter) {
+      if (_.isRegExp(route)) {
+        throw new Error("I don't know much about regex, therefor can't create subroutes with regex! sorry!");
+      }
+      if (minirouter instanceof Toolbelt.MiniRouter) {
+        if (!minirouter.router) minirouter.router = this.router;
+      }
+      else if (_.isObject(minirouter)) {
+        minirouter = new Toolbelt.MiniRouter(minirouter);
+        minirouter.router = this.router;
+      } else {
+        // Ok, what about handling normal routes?
+        return this;
+      }
+      minirouter.parent = this;
+      minirouter.name = route;
+      minirouter.routeRgx = _routeToRegExp(minirouter.name + '/(*e)');
+      if (this.rootName === '') {
+        if (this.name === '') {
+          minirouter.rootName = '';
+        } else {
+          minirouter.rootName = this.name + '/';
+        }
+      } else {
+        minirouter.rootName = this.rootName + this.name + '/';
+      }
+      minirouter.root = _routeToRegExp(minirouter.rootName + '(*e)');
+      var routeRgx, callback;
+      minirouter.parent._routes[route] = minirouter;
+      routeRgx = _routeToRegExp(minirouter.rootName + route);
+      callback = routeGenerator(minirouter, routeRgx);
+      this.router.route(routeRgx, callback);
+      minirouter._bindRoutes();
+      this._minirouts.push(minirouter);
+      return this;
+    },
+    _bindRoutes: function() {
+      this._minirouts = [];
+      if (!this.subroutes) return;
+      this.subroutes = _.result(this, 'subroutes');
+      var route, routes = _.keys(this.subroutes);
+      while ((route = routes.pop()) != void 0) {
+        this._route(route, this.subroutes[route]);
+      }
+    }
+  });
+
+  //   funL = Backbone.history.loadUrl
+  // Backbone.history.loadUrl = (_fragment)->
+  //   fragment = @getFragment(_fragment)
+  //   @previousPath = @fragment
+  //   funL.apply(this,slice.call(arguments))
+
+  var newBackboneHistory = false,
+      overRiderBackboneHistory = function() {
+        var lastPath = Backbone.history.fragment;
+        Backbone.History.prototype.loadUrl = function(fragment) {
+          var router = this;
+          fragment = this.fragment = this.getFragment(fragment);
+          this.previousPath = lastPath == void 0 ? lastPath : fragment;
+          return _.any(this.handlers, function(handler) {
+            if (handler.route.test(fragment)) {
+              handler.callback(fragment);
+              router.oldArgs = _extractParameters(handler.route, fragment);
+              lastPath = fragment;
+              return true;
+            }
+          });
+        };
+        newBackboneHistory = true;
+      };
+
+  Toolbelt.Router = {
+    processSubroutes: function() {
+      if (!newBackboneHistory) overRiderBackboneHistory();
+      var subroutes = this.subroutes;
+      if (!subroutes) { return; }
+      this._routes = {};
+      this._routeStack = [];
+      this.minirouter = new Toolbelt.MiniRouter({router: this, subroutes: subroutes, parent: this, name: '', rootName: ''});
+      this.minirouter.root = /^(?:(.*?))?$/;
+      this.minirouter._bindRoutes();
+    }
+  };
+
 });

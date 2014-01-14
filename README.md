@@ -160,13 +160,80 @@ means that this is an immediate propery, and will not change on
 add/remove/reset, to make that happen pass empty array as attributes.
 
 
+## Toolbelt.SubRoute
+
+A micro routing system (just converts to backbone routes) that let you apply subrouting
+and make your router code clear, and a powerfull dictator!
+
+### subroutes
+
+`router.routes` is like before (no magic is there), but `router.subroutes` will
+make a nested set of `MiniRouters` that let you specify `start` and `end`
+functions for bootstraping and/or closing controllers/views/models/etc.
+
+Usage:
+
+````javascript
+  // Extend your router with toolbelt router (you can extend all your routers with just 
+  // extending Backbone.Router itself!)
+  var createRouter = new Backbone.Toolbelt.MiniRouter({
+    start: function() {},
+    stop: function() {},
+  });
+  var Router = Backbone.Router.extend({
+    subroutes: {
+      posts: {
+        start: function() {},
+        stop: function() {},
+        subroutes: {
+          ":id": {
+            start: function() {},
+          },
+          create: createRouter
+        }
+      }
+    },
+    help: function() {
+      // This is normal route!
+    }
+  });
+  Backbone.Toolbelt.extend(Backbone.Toolbelt.Router, Router);
+
+  var router = new Router();
+
+  // Everything else is just like backbone
+````
+
+Hints:
+* This is not compatible with Backbone.Router routes, will result an error, use just one of them.
+
+* Using this will change `Backbone.History.prototype.loadUrl` to handle last url and arguemnts!
+
+* The MiniRouter can have router other than current router and applied in another router,
+can't find any usecase but maybe one requires that.
+
+* By default MiniRouter is generated automatically on router's subroute generation process
+and router set to parent router.
+
+* This approach made with a stack of miniroutes, stack is an attribute inside router (`_routeStack`),
+using router other than current router may result in unexpected things.
+
+* Since router store minirouter specific variables inside minirouter so it's prohibited to use a 
+minirouter in multiple routers.
+
+* Passing regex as route name will throw error (cause that's much complex and not found anything to handle that)
+
 ## Contributers
 
 This library created and maintained by @keykakito ([@keykakito](https://twitter.com/keykakito))
 
 Feel free contribute! :)
 
-This library needs code, wiki pages, docs, gh-pages, build scripts, tests.
+This library needs code, wiki pages, docs, gh-pages, build scripts, tests and feedback.
+
+<blockquote cite="https://en.wikiquote.org/wiki/Linus_Torvalds">Most good programmers do programming not because they expect to get paid or get adulation by the public, but because it is fun to program.</blockquote>
+
+***Linus Torvalds***
 
 ## Licence
 

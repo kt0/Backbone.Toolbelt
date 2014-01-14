@@ -1,0 +1,94 @@
+<html>
+  <head>
+    <title>Backbone.Toolbelt * Bind model to DOM</title>
+    <script src="../vendor/jquery.js" type="text/javascript"></script>
+    <script src="../vendor/underscore.js" type="text/javascript"></script>
+    <script src="../vendor/backbone.js" type="text/javascript"></script>
+    <script src="../../build/backbone.toolbelt.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <a href="#posts">Posts</a> . <a href="#help">Help</a> . <a href="#posts/create">Create</a>
+    <div class="box" id="help">
+      <h1>Help me please!</h1>
+    </div>
+
+    <div class="box" id="posts">
+      <button class="back">Back</button>
+      <ol>
+        <li id="post1" data-path="posts/1">Post 1</li>
+        <li id="post2" data-path="posts/2">Post 2</li>
+        <li id="post3" data-path="posts/3">Post 3</li>
+      </ol>
+      <div class="create">
+        <input type="text">
+      </div>
+    </div>
+
+    <script>
+      $('li').click(function(e) {
+        var url = $(e.target).attr('data-path');
+        Backbone.history.navigate(url, true);
+      });
+
+      $('.back').click(function() {
+        Backbone.history.navigate('posts', true);
+      });
+      // Extend your router with toolbelt router (you can extend all your routers with just 
+      // extending Backbone.Router itself!)
+      var createRoute = new Backbone.Toolbelt.MiniRouter({
+        start: function() {
+          console.log('hi!');
+          $('li').hide();
+          $('.create').show();
+        },
+        stop: function() {
+          $('li').show();
+          $('.create').hide();
+        }
+      });
+      var Router = Backbone.Router.extend({
+        subroutes: {
+          help: {
+            start: function() {
+              $('.box').hide();
+              $('#help').show();
+            }
+          },
+          "posts": {
+            start: function() {
+              $('.box').hide();
+              $('#posts').show();
+              $('.create').hide();
+            },
+            stop: function() {
+              $('#posts').hide();
+            },
+            subroutes: {
+              create: createRoute,
+              ":id": {
+                start: function(id) {
+                  $('li').hide();
+                  $('#post'+id).show();
+                },
+                stop: function() {
+                  console.log(arguments);
+                  $('li').show();
+                }
+              }
+            }
+          }
+        }
+      });
+      Backbone.Toolbelt.extend(Backbone.Toolbelt.Router, Router);
+
+      var router = new Router();
+
+      router.processSubroutes();
+
+      $('.box').hide();
+      Backbone.history.start({puststate: false});
+
+      // Everything else is just like backbone
+    </script>
+  </body>
+</html>
