@@ -160,7 +160,7 @@ means that this is an immediate propery, and will not change on
 add/remove/reset, to make that happen pass empty array as attributes.
 
 
-## Toolbelt.SubRoute
+## Toolbelt.Router
 
 A micro routing system (just converts to backbone routes) that let you apply subrouting
 and make your router code clear, and a powerfull dictator!
